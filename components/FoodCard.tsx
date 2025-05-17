@@ -54,7 +54,7 @@ export default function FoodCard({
       <div className="p-6">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-bold text-xl text-gray-800 group-hover:text-indigo-600 transition-colors">{name}</h3>
-          <span className="font-semibold text-rose-500">${price.toFixed(2)}</span>
+          <span className="font-semibold text-rose-500">₹{price.toFixed(2)}</span>
         </div>
         
         <p className="text-gray-600 mb-4 line-clamp-2">{description}</p>
