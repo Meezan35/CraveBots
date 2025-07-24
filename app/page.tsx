@@ -1,12 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import SearchInput from '@/components/SearchInput';
-import FoodCard from '@/components/FoodCard';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import menuDatabase from "../data/restauantData.json"
-
-
+import { useState, useEffect } from "react";
+import SearchInput from "@/components/SearchInput";
+import FoodCard from "@/components/FoodCard";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import menuDatabase from "../data/restauantData.json";
 
 export default function Home() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -14,240 +12,250 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  
-  // Available filters based on our data
+
   const filters = [
-    { id: 'spicy', label: 'Spicy' },
-    { id: 'vegetarian', label: 'Vegetarian' },
-    { id: 'vegan', label: 'Vegan' },
-    { id: 'gluten-free', label: 'Gluten-Free' },
-    { id: 'popular', label: 'Popular Items' }
+    { id: "spicy", label: "Spicy" },
+    { id: "vegetarian", label: "Vegetarian" },
+    { id: "vegan", label: "Vegan" },
+    { id: "gluten-free", label: "Gluten-Free" },
+    { id: "popular", label: "Popular Items" },
   ];
 
-  // Initialize with all food items on first load
   useEffect(() => {
     setSearchResults(menuDatabase);
   }, []);
 
-  const handleSearch = async (query: string) => {
-    // Set loading state
+  const handleSearch = async (query: string, filtersOverride?: string[]) => {
     setIsSearching(true);
     setHasSearched(true);
-    
+
+    const filtersToApply = filtersOverride || activeFilters;
+
     try {
-      // In a real app, this would be an API call to your backend
-      // For this example, we'll simulate a search on our mock database
-      
-      // Convert query to lowercase for easier matching
-      const searchTerms = query.toLowerCase().split(' ');
-      const queryLower = query.toLowerCase();
-      
-      // Extract flavor profiles and characteristics from query
-      const hasSweetFlavor = queryLower.includes('sweet');
-      const hasSpicyFlavor = queryLower.includes('spicy') || queryLower.includes('hot');
-      const hasMildFlavor = queryLower.includes('mild');
-      const hasCreamyTexture = queryLower.includes('creamy');
-      const hasRedColor = queryLower.includes('red');
-      const hasOrangeColor = queryLower.includes('orange');
-      
-      // Check for key food type searches
-      const isChickenSearch = queryLower.includes('chicken');
-      const isDessertSearch = queryLower.includes('dessert') || queryLower.includes('sweet');
-      const isVegetarianSearch = queryLower.includes('vegetarian') || queryLower.includes('veg ');
-      const isVeganSearch = queryLower.includes('vegan');
-      
-      // Simple search algorithm with improved edge case handling
-      const results = menuDatabase.filter(item => {
-        // STEP 1: Check item type matching (chicken, vegetarian, vegan, dessert)
-        
-        // Check for chicken dishes
-        if (isChickenSearch) {
-          const hasChickenTag = item.tags.includes('chicken');
-          const hasChickenInName = item.name.toLowerCase().includes('chicken');
-          const hasChickenInDesc = item.description.toLowerCase().includes('chicken');
-          
-          if (!(hasChickenTag || hasChickenInName || hasChickenInDesc)) {
-            return false; // Not a chicken dish, so skip
+      const response = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) throw new Error("API request failed");
+
+      const searchParams = await response.json();
+      const queryLower = query.toLowerCase().trim();
+
+      const exactNameMatches = menuDatabase.filter(
+        (item) =>
+          item.name.toLowerCase() === queryLower ||
+          item.name.toLowerCase().includes(queryLower)
+      );
+
+      if (exactNameMatches.length > 0) {
+        setSearchResults(exactNameMatches);
+        return;
+      }
+
+      let filteredByDietaryType = menuDatabase;
+
+      if (searchParams.dietaryType) {
+        filteredByDietaryType = menuDatabase.filter((item) => {
+          if (searchParams.dietaryType === "non-vegetarian") {
+            return item.dietaryType === "non-vegetarian";
+          } else if (searchParams.dietaryType === "vegetarian") {
+            return (
+              item.dietaryType === "vegetarian" ||
+              item.dietaryType === "vegan"
+            );
+          } else if (searchParams.dietaryType === "vegan") {
+            return item.dietaryType === "vegan";
           }
-        }
-        
-        // Check for vegetarian dishes
-        if (isVegetarianSearch && 
-            !item.dietary?.includes('vegetarian') && 
-            !item.tags?.includes('vegetarian')) {
-          return false; // Not vegetarian, so skip
-        }
-        
-        // Check for vegan dishes
-        if (isVeganSearch && 
-            !item.dietary?.includes('vegan') && 
-            !item.tags?.includes('vegan')) {
-          return false; // Not vegan, so skip
-        }
-        
-        // Check for desserts/sweet dishes
-        if (isDessertSearch) {
-          const isDessert = item.tags?.includes('dessert') || 
-                           item.tags?.includes('sweet') || 
-                           item.description.toLowerCase().includes('sweet') ||
-                           item.name.toLowerCase().includes('sweet') ||
-                           (item.id === 7); // Chocolate Lava Cake
-          
-          // If explicitly looking for dessert/sweet items but this isn't one
-          if (!isDessert) {
-            return false;
-          }
-        }
-        
-        // STEP 2: Check for specific flavor profiles and characteristics
-        
-        // Sweet flavor check - exclude non-sweet if sweet was mentioned
-        if (hasSweetFlavor) {
-          const hasSweet = item.tags?.includes('sweet') || 
-                          item.description.toLowerCase().includes('sweet') ||
-                          item.name.toLowerCase().includes('sweet') ||
-                          (item.id === 7); // Chocolate Lava Cake
-          
-          if (!hasSweet) {
-            return false; // Not sweet, so skip
-          }
-        }
-        
-        // Spicy flavor check
-        if (hasSpicyFlavor && 
-            item.spiceLevel !== 'Hot' && 
-            item.spiceLevel !== 'Medium' && 
-            !item.tags?.includes('spicy')) {
-          return false; // Not spicy enough, so skip
-        }
-        
-        // Mild flavor check
-        if (hasMildFlavor && 
-            item.spiceLevel !== 'Mild' && 
-            item.spiceLevel !== 'None') {
-          return false; // Not mild, so skip
-        }
-        
-        // Creamy texture check
-        if (hasCreamyTexture && !item.tags?.includes('creamy')) {
-          return false; // Not creamy, so skip
-        }
-        
-        // Color checks
-        if (hasRedColor && !item.tags?.includes('red sauce')) {
-          return false; // Not red, so skip
-        }
-        
-        if (hasOrangeColor && !item.tags?.includes('orange sauce')) {
-          return false; // Not orange, so skip
-        }
-        
-        // Check if this is a red chicken gravy query (special case)
-        if (isChickenSearch && queryLower.includes('gravy') && hasRedColor) {
-          return item.tags.includes('chicken') && 
-                 item.tags.includes('red sauce');
-        }
-        
-        // STEP 3: If we've passed all the specific filters above, check the general terms
-        
-        // If the search is very specific (has food type AND characteristics), 
-        // we've already handled all needed filtering above
-        if ((isChickenSearch || isVegetarianSearch || isVeganSearch || isDessertSearch) && 
-            (hasSweetFlavor || hasSpicyFlavor || hasMildFlavor || hasCreamyTexture || 
-             hasRedColor || hasOrangeColor)) {
           return true;
-        }
-        
-        // General search term matching for less specific queries
-        const nameMatch = searchTerms.some(term => 
-          item.name.toLowerCase().includes(term)
-        );
-        
-        const descMatch = searchTerms.some(term => 
-          item.description.toLowerCase().includes(term)
-        );
-        
-        const tagMatch = item.tags.some(tag => 
-          searchTerms.some(term => tag.includes(term))
-        );
-        
-        return nameMatch || descMatch || tagMatch;
-      });
-      
-      // Apply any active filters
-      const filteredResults = results.filter(item => {
-        if (activeFilters.length === 0) return true;
-        
-        return activeFilters.every(filter => {
-          switch(filter) {
-            case 'spicy':
-              return item.spiceLevel === 'Hot' || item.spiceLevel === 'Medium' || item.tags?.includes('spicy');
-            case 'vegetarian':
-              return item.dietary?.includes('vegetarian') || item.tags?.includes('vegetarian');
-            case 'vegan':
-              return item.dietary?.includes('vegan') || item.tags?.includes('vegan');
-            case 'gluten-free':
-              return item.dietary?.includes('gluten-free');
-            case 'popular':
-              return item.isPopular === true;
-            default:
-              return true;
-          }
         });
+      }
+
+      if (
+        searchParams.mainIngredients &&
+        searchParams.mainIngredients.length > 0
+      ) {
+        filteredByDietaryType = filteredByDietaryType.filter((item) =>
+          searchParams.mainIngredients.some((ingredient: string) =>
+            item.mainIngredients?.some((i) =>
+              i.toLowerCase().includes(ingredient.toLowerCase())
+            ) ||
+            item.tags?.some((tag: string) =>
+              tag.toLowerCase().includes(ingredient.toLowerCase())
+            )
+          )
+        );
+      }
+
+      let filteredResults = filteredByDietaryType;
+
+      if (searchParams.tags && searchParams.tags.length > 0) {
+        filteredResults = filteredByDietaryType.filter((item) =>
+          searchParams.tags.some((tag: string) =>
+            item.tags?.some(
+              (itemTag: string) =>
+                itemTag.toLowerCase().includes(tag.toLowerCase()) ||
+                tag.toLowerCase().includes(itemTag.toLowerCase())
+            )
+          )
+        );
+      }
+
+      if (searchParams.dietary && searchParams.dietary.length > 0) {
+        filteredResults = filteredResults.filter((item) =>
+          searchParams.dietary.some((d: string) =>
+            item.dietary?.includes(d)
+          )
+        );
+      }
+
+      if (searchParams.spiceLevel) {
+        filteredResults = filteredResults.filter(
+          (item) =>
+            item.spiceLevel &&
+            item.spiceLevel.toLowerCase() ===
+              searchParams.spiceLevel.toLowerCase()
+        );
+      }
+
+      if (
+        searchParams.excludeCategories &&
+        searchParams.excludeCategories.length > 0
+      ) {
+        filteredResults = filteredResults.filter(
+          (item) =>
+            !searchParams.excludeCategories.some((category: string) =>
+              item.tags.includes(category.toLowerCase())
+            )
+        );
+      }
+
+      if (filteredResults.length === 0 && searchParams.dietaryType) {
+        filteredResults = filteredByDietaryType;
+      }
+
+      const sortedResults = filteredResults.sort((a, b) => {
+        const aTagMatches =
+          searchParams.tags?.filter((tag: string) =>
+            a.tags?.some(
+              (itemTag: string) =>
+                itemTag.toLowerCase().includes(tag.toLowerCase()) ||
+                tag.toLowerCase().includes(itemTag.toLowerCase())
+            )
+          ).length || 0;
+
+        const bTagMatches =
+          searchParams.tags?.filter((tag: string) =>
+            b.tags?.some(
+              (itemTag: string) =>
+                itemTag.toLowerCase().includes(tag.toLowerCase()) ||
+                tag.toLowerCase().includes(itemTag.toLowerCase())
+            )
+          ).length || 0;
+
+        if (aTagMatches !== bTagMatches) {
+          return bTagMatches - aTagMatches;
+        }
+
+        if (a.isPopular && !b.isPopular) return -1;
+        if (!a.isPopular && b.isPopular) return 1;
+        return 0;
       });
-      
-      // Simulate network delay
-      setTimeout(() => {
-        setSearchResults(filteredResults);
-        setIsSearching(false);
-      }, 800);
-      
+
+      // ✅ FINAL FILTERS FROM UI
+      let finalResults = sortedResults;
+
+      if (filtersToApply.length > 0) {
+        finalResults = sortedResults.filter((item) =>
+          filtersToApply.every((filter) => {
+            switch (filter) {
+              case "spicy":
+                return (
+                  item.spiceLevel?.toLowerCase() === "hot" ||
+                  item.spiceLevel?.toLowerCase() === "medium" ||
+                  item.tags?.includes("spicy")
+                );
+              case "vegetarian":
+                return (
+                  item.dietary?.includes("vegetarian") ||
+                  item.tags?.includes("vegetarian")
+                );
+              case "vegan":
+                return (
+                  item.dietary?.includes("vegan") ||
+                  item.tags?.includes("vegan")
+                );
+              case "gluten-free":
+                return item.dietary?.includes("gluten-free");
+              case "popular":
+                return item.isPopular === true;
+              default:
+                return true;
+            }
+          })
+        );
+      }
+
+      setSearchResults(finalResults);
     } catch (error) {
-      console.error('Search error:', error);
+      console.error("Search failed:", error);
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
     }
   };
 
   const toggleFilter = (filterId: string) => {
-    // Update active filters
-    setActiveFilters(prev => {
-      const newFilters = prev.includes(filterId) 
-        ? prev.filter(id => id !== filterId) 
+    setActiveFilters((prev) => {
+      const newFilters = prev.includes(filterId)
+        ? prev.filter((id) => id !== filterId)
         : [...prev, filterId];
-      
-      // Reapply filters to current results
-      const searchInputElement = document.querySelector('input[type="search"]') as HTMLInputElement;
-      const searchQuery = searchInputElement ? searchInputElement.value : '';
-      
-      if (hasSearched && searchQuery) {
-        // Re-run search with current query and new filters
-        setTimeout(() => handleSearch(searchQuery), 0);
+
+      const searchInputElement = document.querySelector(
+        'input[type="search"]'
+      ) as HTMLInputElement;
+      const searchQuery = searchInputElement?.value || "";
+
+      if (searchQuery.trim()) {
+        handleSearch(searchQuery, newFilters);
       } else {
-        // Apply filters to all items if no search has been performed
-        const filteredResults = menuDatabase.filter(item => {
-          if (newFilters.length === 0) return true;
-          
-          return newFilters.every(filter => {
-            switch(filter) {
-              case 'spicy':
-                return item.spiceLevel === 'Hot' || item.spiceLevel === 'Medium' || item.tags?.includes('spicy');
-              case 'vegetarian':
-                return item.dietary?.includes('vegetarian') || item.tags?.includes('vegetarian');
-              case 'vegan':
-                return item.dietary?.includes('vegan') || item.tags?.includes('vegan');
-              case 'gluten-free':
-                return item.dietary?.includes('gluten-free');
-              case 'popular':
-                return item.isPopular === true;
-              default:
-                return true;
-            }
-          });
-        });
-        
+        let filteredResults = menuDatabase;
+
+        if (newFilters.length > 0) {
+          filteredResults = menuDatabase.filter((item) =>
+            newFilters.every((filter) => {
+              switch (filter) {
+                case "spicy":
+                  return (
+                    item.spiceLevel?.toLowerCase() === "hot" ||
+                    item.spiceLevel?.toLowerCase() === "medium" ||
+                    item.tags?.includes("spicy")
+                  );
+                case "vegetarian":
+                  return (
+                    item.dietary?.includes("vegetarian") ||
+                    item.tags?.includes("vegetarian")
+                  );
+                case "vegan":
+                  return (
+                    item.dietary?.includes("vegan") ||
+                    item.tags?.includes("vegan")
+                  );
+                case "gluten-free":
+                  return item.dietary?.includes("gluten-free");
+                case "popular":
+                  return item.isPopular === true;
+                default:
+                  return true;
+              }
+            })
+          );
+        }
+
         setSearchResults(filteredResults);
       }
-      
+
       return newFilters;
     });
   };
@@ -255,48 +263,49 @@ export default function Home() {
   return (
     <div className="py-12 px-4 bg-gradient-to-b from-[#FFF5F1] to-white min-h-screen">
       <div className="max-w-6xl mx-auto">
-        {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="text-gray-800">Find Your Perfect </span>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-indigo-500">Dish</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-indigo-500">
+              Dish
+            </span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Describe exactly what you're craving and our AI will find the perfect dishes for you
+            Describe exactly what you're craving and our AI will find the
+            perfect dishes for you
           </p>
         </div>
-        
-        {/* Search Input Component */}
+
         <div className="mb-8">
-          <SearchInput 
-            onSearch={handleSearch} 
+          <SearchInput
+            onSearch={(q) => handleSearch(q)}
             examples={[
               "I want to eat chicken gravy which is red in color",
               "Vegetarian dishes with creamy sauce",
-              "Spicy food that's ready in under 20 minutes"
-            ]} 
+              "I want to eat something sweet",
+            ]}
           />
         </div>
-        
-        {/* Filters */}
+
         <div className="mb-6">
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-1 text-gray-700 font-medium mb-3 hover:text-indigo-600 transition-colors"
           >
-            Filters {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            Filters{" "}
+            {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
-          
+
           {showFilters && (
             <div className="flex flex-wrap gap-2 mb-4">
-              {filters.map(filter => (
+              {filters.map((filter) => (
                 <button
                   key={filter.id}
                   onClick={() => toggleFilter(filter.id)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                     activeFilters.includes(filter.id)
-                      ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
                   {filter.label}
@@ -305,8 +314,7 @@ export default function Home() {
             </div>
           )}
         </div>
-        
-        {/* Results Area */}
+
         <div>
           {isSearching ? (
             <div className="flex justify-center items-center py-12">
@@ -315,33 +323,23 @@ export default function Home() {
           ) : searchResults.length > 0 ? (
             <div className="space-y-6">
               <p className="font-medium text-gray-700 text-lg">
-                {searchResults.length} {hasSearched ? 'results found' : 'dishes available'}
+                {searchResults.length}{" "}
+                {hasSearched ? "results found" : "dishes available"}
               </p>
-              
-              {/* Results Cards - Now using our FoodCard component */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {searchResults.map((item) => (
-                  <FoodCard 
-                    key={item.id}
-                    id={item.id}
-                    name={item.name}
-                    price={item.price}
-                    description={item.description}
-                    image={item.image}
-                    restaurant={item.restaurant}
-                    rating={item.rating}
-                    prepTime={item.prepTime}
-                    spiceLevel={item.spiceLevel}
-                    dietary={item.dietary}
-                    isPopular={item.isPopular}
-                  />
+                  <FoodCard key={item.id} {...item} />
                 ))}
               </div>
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-xl font-medium text-gray-700 mb-2">No results found</p>
-              <p className="text-gray-500">Try a different search query or adjust your filters</p>
+              <p className="text-xl font-medium text-gray-700 mb-2">
+                No results found
+              </p>
+              <p className="text-gray-500">
+                Try a different search query or adjust your filters
+              </p>
             </div>
           )}
         </div>

@@ -5,10 +5,11 @@ import Header from "@/components/Header";
 export const metadata = {
   title: "CraveBots",
   description: "AI-powered restaurant menu search",
+  
 };
 
 import { ReactNode } from "react";
-import { Search } from "lucide-react";
+
 
 
 export default function RootLayout({ children }: { children: ReactNode }) {
