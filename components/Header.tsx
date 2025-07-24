@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,13 +12,22 @@ export default function Header() {
     <header className="sticky top-0 z-50 backdrop-blur-md bg-[#F7E1D7] shadow-sm border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         {/* Logo */}
-        <Link
-          href="/"
-          className="text-2xl font-extrabold tracking-tight text-gray-800 flex items-center gap-2"
-        >
-          <span className="font-serif text-3xl text-rose-600">Crave</span>
-          <span className="text-indigo-600">Bots</span>
-        </Link>
+      <div className="flex items-center gap-3">
+  <Image
+    src={"/images/dishes/crave-bots.png"}
+    alt="CraveBots Logo"
+    width={50}
+    height={50}
+    className="rounded-lg"
+  />
+  <Link
+    href="/"
+    className="text-2xl font-extrabold tracking-tight text-gray-800 flex items-center gap-2"
+  >
+    <span className="font-serif text-3xl text-rose-600">Crave</span>
+    <span className="text-indigo-600">Bots</span>
+  </Link>
+</div>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex space-x-8 items-center font-medium text-gray-700">
