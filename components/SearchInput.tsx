@@ -57,11 +57,15 @@ declare global {
 interface SearchInputProps {
   onSearch: (query: string) => void;
   examples?: string[];
+  searchResults?: string; // Optional prop to announce search results
+  isSearching?: boolean; // Optional prop to indicate search is in progress
 }
 
 export default function SearchInput({
   onSearch,
   examples = [],
+  searchResults,
+  isSearching,
 }: SearchInputProps) {
   const [query, setQuery] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -70,9 +74,64 @@ export default function SearchInput({
   const examplesRef = useRef<HTMLDivElement>(null);
   const [isListening, setIsListening] = useState(false);
 
+  // Type for SpeechRecognition instance
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
+  // State to store mic errors
   const [micError, setMicError] = useState<string | null>(null);
+
+  // Speech Synthesis state and ref
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+
+  // Initialize Speech Synthesis
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      synthRef.current = window.speechSynthesis;
+    }
+  }, []);
+
+  // Function to speak text
+  const speak = (
+    text: string,
+    options: { rate?: number; pitch?: number; volume?: number } = {}
+  ) => {
+    if (!synthRef.current) {
+      console.warn("Speech Synthesis not supported");
+      return;
+    }
+
+    // Cancel any ongoing speech
+    synthRef.current.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = options.rate || 1;
+    utterance.pitch = options.pitch || 1;
+    utterance.volume = options.volume || 0.8;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    synthRef.current.speak(utterance);
+  };
+
+  // Effect to announce search results
+  useEffect(() => {
+    if (searchResults && !isSearching) {
+      // Announce the search results after a short delay
+      const timer = setTimeout(() => {
+        speak(`Found results: ${searchResults}`, { rate: 1.1 });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchResults, isSearching]);
+
+  useEffect(() => {
+    if (isSearching) {
+      speak("Searching...", { rate: 1.2 });
+    }
+  }, [isSearching]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -111,8 +170,11 @@ export default function SearchInput({
 
     recognition.onstart = () => {
       setIsListening(true);
-      setMicError(null); // Clear any previous errors
+      setMicError(null);
       console.log("Speech recognition started. Please speak...");
+
+      // Audio feedback when recording starts
+      speak("Listening...", { rate: 1.3, pitch: 1.1 });
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -120,6 +182,10 @@ export default function SearchInput({
       console.log("User said:", transcript);
       setQuery(transcript);
 
+      // Confirm what was heard with audio feedback
+      speak(`Searching for ${transcript}`, { rate: 1.1 });
+
+      // Automatically trigger search after speech recognition
       if (transcript.trim()) {
         onSearch(transcript.trim());
         setShowExamples(false);
@@ -135,20 +201,28 @@ export default function SearchInput({
       setIsListening(false);
       console.error("Speech recognition error:", event.error);
       setMicError(`Mic Error: ${event.error}`);
+
+      // Audio feedback for errors
       if (event.error === "not-allowed") {
-        alert(
-          "Microphone access was denied. Please allow microphone access in your browser settings to use voice search."
+        speak(
+          "Microphone access denied. Please allow microphone access in your browser settings."
         );
       } else if (event.error === "no-speech") {
-        alert("No speech detected. Please try again.");
+        speak("No speech detected. Please try again.");
+      } else {
+        speak("Speech recognition error occurred.");
       }
     };
 
     recognitionRef.current = recognition;
 
+    // Cleanup on component unmount
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
+      }
+      if (synthRef.current) {
+        synthRef.current.cancel();
       }
     };
   }, []);
@@ -162,6 +236,7 @@ export default function SearchInput({
   };
 
   const handleExampleClick = (example: string) => {
+    // Set the query in state
     setQuery(example);
 
     if (inputRef.current) {
@@ -181,16 +256,25 @@ export default function SearchInput({
   // Function to handle mic button click
   const handleMicClick = () => {
     if (micError) {
-      alert(micError); // Inform user if mic is not supported or had a previous error
+      speak(micError);
       return;
     }
 
     if (recognitionRef.current) {
       if (isListening) {
-        recognitionRef.current.stop(); // Stop if already listening
+        recognitionRef.current.stop();
+        speak("Voice search stopped.", { rate: 1.2 });
       } else {
         recognitionRef.current.start();
       }
+    }
+  };
+
+  // Function to stop speech synthesis
+  const stopSpeaking = () => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      setIsSpeaking(false);
     }
   };
 
@@ -219,24 +303,39 @@ export default function SearchInput({
 
           {/* Microphone Button - Only show if API is supported */}
           {isSpeechRecognitionAvailable() && (
-            <button
-              type="button"
-              onClick={handleMicClick}
-              className={`absolute right-24 top-1/2 transform -translate-y-1/2 flex items-center justify-center p-2 rounded-full transition-colors
-                          ${
-                            isListening
-                              ? "text-indigo-500 bg-indigo-50"
-                              : "text-gray-500 hover:bg-gray-100"
-                          }
-                          ${micError ? "cursor-not-allowed opacity-50" : ""}`}
-              disabled={!!micError}
-              aria-label="Voice search"
-              title={micError || "Voice search"}
-            >
-              <Mic
-                className={`h-6 w-6 ${isListening ? "animate-pulse" : ""}`}
-              />
-            </button>
+            <div className="absolute right-24 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleMicClick}
+                className={`flex items-center justify-center p-2 rounded-full transition-colors
+                            ${
+                              isListening
+                                ? "text-indigo-500 bg-indigo-50"
+                                : "text-gray-500 hover:bg-gray-100"
+                            }
+                            ${micError ? "cursor-not-allowed opacity-50" : ""}`}
+                disabled={!!micError}
+                aria-label="Voice search"
+                title={micError || "Voice search"}
+              >
+                <Mic
+                  className={`h-6 w-6 ${isListening ? "animate-pulse" : ""}`}
+                />
+              </button>
+
+              {/* Stop speaking button - only show when speaking */}
+              {isSpeaking && (
+                <button
+                  type="button"
+                  onClick={stopSpeaking}
+                  className="flex items-center justify-center p-1 rounded-full text-red-500 hover:bg-red-50 transition-colors"
+                  aria-label="Stop speaking"
+                  title="Stop speaking"
+                >
+                  <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
+                </button>
+              )}
+            </div>
           )}
 
           <button
