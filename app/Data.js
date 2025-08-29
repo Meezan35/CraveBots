@@ -1,0 +1,148 @@
+const Resdata = [
+  {
+    id: 1,
+    image:
+      "https://images.ctfassets.net/3s5io6mnxfqz/6ZImCEzx6UuvuKaAiZEDDN/50479ee4a0902deb4eb1bab720ce248a/image1.jpg",
+    dishName: "Paneer Butter Masala",
+    cuisine: "North Indian Traditional Rich Cuisine",
+    rating: 4.6,
+    time: "30-40 mins",
+    spiceLevel: "Mild",
+    glutenFree: false,
+    restaurantName: "Spice of India",
+  },
+  {
+    id: 2,
+    image:
+      "https://st2.depositphotos.com/5653638/48017/i/450/depositphotos_480177892-stock-photo-dum-handi-chicken-biryani-prepared.jpgjpg",
+    dishName: "Chicken Biryani",
+    cuisine: "Royal Hyderabadi Indian Spiced Cuisine",
+    rating: 4.8,
+    time: "35-45 mins",
+    spiceLevel: "Hot",
+    glutenFree: false,
+    restaurantName: "Biryani Palace",
+  },
+  {
+    id: 3,
+    image:
+      "https://maxi.cdnartwhere.eu/wp-content/uploads/recipe/2015-04/fotolia_56561857_subscription_monthly_m_0.jpg",
+    dishName: "Margherita Pizza",
+    cuisine: "Authentic Italian Wood-Fired Cuisine",
+    rating: 4.4,
+    time: "20-30 mins",
+    spiceLevel: "Mild",
+    glutenFree: false,
+    restaurantName: "Pizza Roma",
+  },
+  {
+    id: 4,
+    image:
+      "https://th.bing.com/th/id/OIP.3HyNVSW8zkIeTKP2iHY7IwHaE8?r=0&o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3",
+    dishName: "Spaghetti Aglio e Olio",
+    cuisine: "Classic Italian Mediterranean Pasta Cuisine",
+    rating: 4.5,
+    time: "25-35 mins",
+    spiceLevel: "Mild",
+    glutenFree: true,
+    restaurantName: "Pasta Corner",
+  },
+  {
+    id: 5,
+    image:
+      "https://natashaskitchen.com/wp-content/uploads/2020/03/Chicken-Chow-Mein-5.jpg",
+    dishName: "Chicken Chow Mein",
+    cuisine: "Traditional Chinese Street-Style Noodle Cuisine",
+    rating: 4.3,
+    time: "20-25 mins",
+    spiceLevel: "Hot",
+    glutenFree: false,
+    restaurantName: "Dragon Wok",
+  },
+  {
+    id: 6,
+    image:
+      "https://www.awesomecuisine.com/wp-content/uploads/2018/07/cabbage_manchurian_dry.jpg",
+    dishName: "Veg Manchurian",
+    cuisine: "Fusion Indo-Chinese Spicy Veg Cuisine",
+    rating: 4.2,
+    time: "25-35 mins",
+    spiceLevel: "Hot",
+    glutenFree: true,
+    restaurantName: "Spicy China",
+  },
+  {
+    id: 7,
+    image:
+      "https://th.bing.com/th/id/OIP.krcM5HznBzzYV2EQUsUWTAHaE8?w=278&h=185&c=7&r=0&o=7&dpr=1.8&pid=1.7&rm=3",
+    dishName: "Salmon Sushi",
+    cuisine: "Authentic Japanese Fine Dining Cuisine",
+    rating: 4.9,
+    time: "30-40 mins",
+    spiceLevel: "Mild",
+    glutenFree: true,
+    restaurantName: "Tokyo Sushi Bar",
+  },
+  {
+    id: 8,
+    image:
+      "https://thecozycook.com/wp-content/uploads/2023/02/Homemade-Ramen-f.jpg",
+    dishName: "Spicy Ramen",
+    cuisine: "Traditional Japanese Street-Style Ramen Cuisine",
+    rating: 4.7,
+    time: "30-40 mins",
+    spiceLevel: "Hot",
+    glutenFree: false,
+    restaurantName: "Ramen House",
+  },
+  {
+    id: 9,
+    image:
+      "https://tse4.mm.bing.net/th/id/OIP.wNR5gNhU0F-UtJbKu3zlbgHaLH?r=0&pid=ImgDet&w=204&h=306&c=7&dpr=1.8&o=7&rm=3",
+    dishName: "Beef Tacos",
+    cuisine: "Authentic Mexican Spicy Street Cuisine",
+    rating: 4.6,
+    time: "20-30 mins",
+    spiceLevel: "Hot",
+    glutenFree: true,
+    restaurantName: "Taco Fiesta",
+  },
+  {
+    id: 10,
+    image:
+      "https://tse3.mm.bing.net/th/id/OIP.O4EYOXXJDIWCRlbWhesa5wHaE5?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
+    dishName: "Veggie Burrito",
+    cuisine: "Healthy Mexican Vegetarian Wrap Cuisine",
+    rating: 4.3,
+    time: "25-35 mins",
+    spiceLevel: "Mild",
+    glutenFree: false,
+    restaurantName: "Burrito Express",
+  },
+  {
+    id: 11,
+    image:
+      "https://fotos.perfil.com/2023/02/02/trim/1280/720/shawarma-1502456.jpg",
+    dishName: "Chicken Shawarma",
+    cuisine: "Traditional Middle Eastern Grilled Cuisine",
+    rating: 4.5,
+    time: "20-25 mins",
+    spiceLevel: "Hot",
+    glutenFree: false,
+    restaurantName: "Shawarma King",
+  },
+  {
+    id: 12,
+    image:
+      "https://th.bing.com/th/id/OIP.UxK8MGpn-z3Ig2aFR0TILwHaFW?w=264&h=191&c=7&r=0&o=7&dpr=1.8&pid=1.7&rm=3",
+    dishName: "Falafel Wrap",
+    cuisine: "Classic Middle Eastern Vegetarian Cuisine",
+    rating: 4.4,
+    time: "20-30 mins",
+    spiceLevel: "Mild",
+    glutenFree: true,
+    restaurantName: "Falafel Hub",
+  },
+];
+
+export default Resdata;
